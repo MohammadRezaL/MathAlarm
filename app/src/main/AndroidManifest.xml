@@ -19,10 +19,11 @@
 
         <activity
             android:name=".presentation.alarmring.AlarmRingActivity"
+            android:exported="false"
             android:excludeFromRecents="true"
+            android:launchMode="singleTop"
             android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:exported="false" />
+            android:turnScreenOn="true" />
 
         <activity
             android:name=".MainActivity"

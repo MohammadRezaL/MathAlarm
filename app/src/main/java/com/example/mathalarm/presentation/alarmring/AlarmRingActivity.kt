@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.mathalarm.alarm.AlarmNotificationHelper
 import com.example.mathalarm.audio.AlarmSoundPlayer
 import com.example.mathalarm.audio.AlarmVibrator
 import com.example.mathalarm.core.designsystem.theme.MathAlarmTheme
@@ -52,17 +53,22 @@ class AlarmRingActivity : ComponentActivity() {
     @Inject
     lateinit var alarmVibrator: AlarmVibrator
 
+    @Inject
+    lateinit var alarmNotificationHelper: AlarmNotificationHelper
+
+    private var currentAlarmId: Long = -1L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         showOverLockScreen()
 
-        val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
+        currentAlarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
 
         setContent {
             MathAlarmTheme {
                 AlarmRingRoute(
-                    alarmId = alarmId,
+                    alarmId = currentAlarmId,
                     onStartSound = { ringtoneUri ->
                         alarmSoundPlayer.start(ringtoneUri)
                     },
@@ -70,6 +76,7 @@ class AlarmRingActivity : ComponentActivity() {
                         alarmVibrator.start()
                     },
                     onChallengeCompleted = {
+                        alarmNotificationHelper.cancelAlarmNotification(currentAlarmId)
                         stopAlarmEffects()
                         finish()
                     }
