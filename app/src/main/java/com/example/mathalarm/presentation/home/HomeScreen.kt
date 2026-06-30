@@ -23,6 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mathalarm.domain.model.Alarm
+import com.example.mathalarm.domain.model.RepeatDay
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun HomeRoute(
@@ -153,13 +160,19 @@ private fun AlarmCardItem(
             }
 
             Text(
-                text = "Math challenge: ${alarm.mathDifficulty.displayName} • ${alarm.mathQuestionCount} questions",
+                text = repeatText(alarm),
                 style = MaterialTheme.typography.bodyLarge,
                 color = contentColor
             )
 
             Text(
-                text = repeatText(alarm),
+                text = nextAlarmText(alarm),
+                style = MaterialTheme.typography.bodyLarge,
+                color = contentColor
+            )
+
+            Text(
+                text = "Math challenge: ${alarm.mathDifficulty.displayName} • ${alarm.mathQuestionCount} questions",
                 style = MaterialTheme.typography.bodyLarge,
                 color = contentColor
             )
@@ -195,5 +208,116 @@ private fun repeatText(
         }
 
         "Repeats: $days"
+    }
+}
+
+private fun nextAlarmText(
+    alarm: Alarm
+): String {
+    if (!alarm.isEnabled) {
+        return "Next alarm: Disabled"
+    }
+
+    val nextAlarmDateTime = calculateNextAlarmDateTime(alarm)
+    val timeText = nextAlarmDateTime.format(
+        DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+    )
+
+    val dateText = when (nextAlarmDateTime.toLocalDate()) {
+        LocalDate.now() -> "Today"
+        LocalDate.now().plusDays(1) -> "Tomorrow"
+        else -> nextAlarmDateTime.format(
+            DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
+        )
+    }
+
+    return "Next alarm: $dateText at $timeText"
+}
+
+private fun calculateNextAlarmDateTime(
+    alarm: Alarm
+): LocalDateTime {
+    val now = LocalDateTime.now()
+    val alarmTime = LocalTime.of(alarm.hour, alarm.minute)
+
+    return if (alarm.repeatDays.isEmpty()) {
+        calculateNextOneTimeAlarm(
+            now = now,
+            alarmTime = alarmTime
+        )
+    } else {
+        calculateNextRepeatingAlarm(
+            now = now,
+            alarmTime = alarmTime,
+            repeatDays = alarm.repeatDays
+        )
+    }
+}
+
+private fun calculateNextOneTimeAlarm(
+    now: LocalDateTime,
+    alarmTime: LocalTime
+): LocalDateTime {
+    var nextAlarm = LocalDateTime.of(
+        LocalDate.now(),
+        alarmTime
+    )
+
+    if (!nextAlarm.isAfter(now)) {
+        nextAlarm = nextAlarm.plusDays(1)
+    }
+
+    return nextAlarm
+}
+
+private fun calculateNextRepeatingAlarm(
+    now: LocalDateTime,
+    alarmTime: LocalTime,
+    repeatDays: List<RepeatDay>
+): LocalDateTime {
+    val today = LocalDate.now()
+
+    return repeatDays
+        .map { repeatDay ->
+            val targetDayOfWeek = repeatDay.toDayOfWeek()
+            val daysUntilTarget = daysUntil(
+                from = today.dayOfWeek,
+                to = targetDayOfWeek
+            )
+
+            var candidate = LocalDateTime.of(
+                today.plusDays(daysUntilTarget.toLong()),
+                alarmTime
+            )
+
+            if (!candidate.isAfter(now)) {
+                candidate = candidate.plusWeeks(1)
+            }
+
+            candidate
+        }
+        .minOrNull()
+        ?: calculateNextOneTimeAlarm(
+            now = now,
+            alarmTime = alarmTime
+        )
+}
+
+private fun daysUntil(
+    from: DayOfWeek,
+    to: DayOfWeek
+): Int {
+    return (to.value - from.value + 7) % 7
+}
+
+private fun RepeatDay.toDayOfWeek(): DayOfWeek {
+    return when (this) {
+        RepeatDay.MONDAY -> DayOfWeek.MONDAY
+        RepeatDay.TUESDAY -> DayOfWeek.TUESDAY
+        RepeatDay.WEDNESDAY -> DayOfWeek.WEDNESDAY
+        RepeatDay.THURSDAY -> DayOfWeek.THURSDAY
+        RepeatDay.FRIDAY -> DayOfWeek.FRIDAY
+        RepeatDay.SATURDAY -> DayOfWeek.SATURDAY
+        RepeatDay.SUNDAY -> DayOfWeek.SUNDAY
     }
 }

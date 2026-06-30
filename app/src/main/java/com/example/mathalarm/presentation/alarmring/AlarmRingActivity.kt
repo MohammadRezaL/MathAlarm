@@ -8,12 +8,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -23,8 +29,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.mathalarm.audio.AlarmSoundPlayer
@@ -107,7 +117,7 @@ private fun AlarmRingRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     BackHandler(enabled = true) {
-        // Back button is blocked while alarm is ringing.
+        // Do nothing. User must solve the challenge.
     }
 
     LaunchedEffect(alarmId) {
@@ -153,73 +163,209 @@ private fun AlarmRingScreen(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.errorContainer
+        color = MaterialTheme.colorScheme.background
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+            contentAlignment = Alignment.Center
+        ) {
+            if (!uiState.isAlarmLoaded) {
+                LoadingAlarmContent()
+            } else {
+                AlarmChallengeContent(
+                    uiState = uiState,
+                    onAnswerChange = onAnswerChange,
+                    onSubmitAnswerClick = onSubmitAnswerClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingAlarmContent() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Math Alarm",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "Preparing your challenge...",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AlarmChallengeContent(
+    uiState: AlarmRingUiState,
+    onAnswerChange: (String) -> Unit,
+    onSubmitAnswerClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(22.dp)
+    ) {
+        AlarmHeader()
+
+        QuestionProgressText(
+            currentQuestionNumber = uiState.currentQuestionNumber,
+            totalQuestions = uiState.totalQuestions
+        )
+
+        QuestionCard(
+            questionText = uiState.questionText
+        )
+
+        AnswerInputCard(
+            answerText = uiState.answerText,
+            errorMessage = uiState.errorMessage,
+            onAnswerChange = onAnswerChange,
+            onSubmitAnswerClick = onSubmitAnswerClick
+        )
+
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            onClick = onSubmitAnswerClick
+        ) {
+            Text(
+                text = "Submit answer",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Text(
+            text = "Solve all questions to stop the alarm.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun AlarmHeader() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = "Wake up!",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Your math alarm is ringing",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun QuestionProgressText(
+    currentQuestionNumber: Int,
+    totalQuestions: Int
+) {
+    Text(
+        text = "Question $currentQuestionNumber of $totalQuestions",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun QuestionCard(
+    questionText: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Wake up!",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                text = "Solve this",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.72f)
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                modifier = Modifier.padding(top = 12.dp),
-                text = "Alarm ID: ${uiState.alarmId}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                text = questionText,
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center
             )
+        }
+    }
+}
 
-            Text(
-                modifier = Modifier.padding(top = 24.dp),
-                text = "Question ${uiState.currentQuestionNumber} of ${uiState.totalQuestions}",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-
-            Text(
-                modifier = Modifier.padding(top = 16.dp),
-                text = uiState.questionText,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-
+@Composable
+private fun AnswerInputCard(
+    answerText: String,
+    errorMessage: String?,
+    onAnswerChange: (String) -> Unit,
+    onSubmitAnswerClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp),
-                value = uiState.answerText,
+                modifier = Modifier.fillMaxWidth(),
+                value = answerText,
                 onValueChange = onAnswerChange,
                 label = {
                     Text(text = "Your answer")
                 },
                 singleLine = true,
+                isError = errorMessage != null,
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onSubmitAnswerClick()
+                    }
                 )
             )
 
-            if (uiState.errorMessage != null) {
+            if (errorMessage != null) {
                 Text(
-                    modifier = Modifier.padding(top = 12.dp),
-                    text = uiState.errorMessage,
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
-            }
-
-            Button(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-                onClick = onSubmitAnswerClick
-            ) {
-                Text(text = "Submit answer")
             }
         }
     }
