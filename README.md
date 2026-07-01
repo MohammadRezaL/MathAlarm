@@ -1,5 +1,3 @@
-<img width="1080" height="2400" alt="Screenshot_20260701_101105" src="https://github.com/user-attachments/assets/78920da7-845b-4a48-8fba-f5f5d48f823e" /># Math Alarm
-
 Math Alarm is an Android alarm clock app that requires the user to solve math questions before the alarm can be dismissed.
 
 ## App
