@@ -4,8 +4,6 @@ Math Alarm is an Android alarm clock app that requires the user to solve math qu
 
 ## App
 
-![Uploading Screenshot_20260701_100818.png…]()
-![Uploading Screenshot_20260701_100705.png…]()
 
 
 ## Features
